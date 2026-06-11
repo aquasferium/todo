@@ -17,6 +17,55 @@ interface FiscalTasksContextValue {
 
 const FiscalTasksContext = createContext<FiscalTasksContextValue | undefined>(undefined);
 
+const today = new Date().toISOString().slice(0, 10);
+const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+const seedTasks: FiscalTask[] = [
+  {
+    id: 'seed-icms-cliente-alpha',
+    title: 'Apuração de ICMS - Cliente Alpha',
+    category: 'Apuração de Impostos',
+    taxRegime: 'Lucro Presumido',
+    clientName: 'Cliente Alpha',
+    description: 'Conferir entradas e saídas, validar créditos permitidos e registrar guia para revisão do sócio responsável.',
+    dueDate: today,
+    priority: 'Alta',
+    recurrence: 'Mensal',
+    status: 'Em Andamento',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'seed-dctfweb-beta',
+    title: 'Envio DCTFWeb - Cliente Beta',
+    category: 'Envio de Declarações',
+    taxRegime: 'Lucro Real',
+    clientName: 'Cliente Beta',
+    description: 'Transmitir declaração, salvar recibo no GED e avisar financeiro sobre DARF consolidado.',
+    dueDate: yesterday,
+    priority: 'Alta',
+    recurrence: 'Mensal',
+    status: 'Pendente',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'seed-escrituracao-gamma',
+    title: 'Escrituração de notas de serviço - Cliente Gamma',
+    category: 'Escrituração',
+    taxRegime: 'Simples Nacional',
+    clientName: 'Cliente Gamma',
+    description: 'Importar XML/NFS-e, conciliar retenções e marcar divergências para atendimento ao cliente.',
+    dueDate: tomorrow,
+    priority: 'Média',
+    recurrence: 'Diária',
+    status: 'Concluído',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
 export function FiscalTasksProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<FiscalTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +79,12 @@ export function FiscalTasksProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fiscalTasksApi.list().then((storedTasks) => {
       setTasks(storedTasks);
+      if (storedTasks.length) {
+        setTasks(storedTasks);
+      } else {
+        setTasks(seedTasks);
+        window.localStorage.setItem('fiscal-flow-tasks-v1', JSON.stringify(seedTasks));
+      }
       setIsLoading(false);
     });
   }, []);
