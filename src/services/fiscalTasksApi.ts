@@ -12,6 +12,14 @@ function readStorage(): FiscalTask[] {
   if (!raw) return [];
 
   try {
+    const tasks = JSON.parse(raw) as FiscalTask[];
+    const userTasks = tasks.filter((task) => !task.id.startsWith('seed-'));
+
+    if (userTasks.length !== tasks.length) {
+      writeStorage(userTasks);
+    }
+
+    return userTasks;
     return JSON.parse(raw) as FiscalTask[];
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);

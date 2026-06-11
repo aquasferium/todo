@@ -3,6 +3,7 @@ import {
   BarChart3,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   Clock3,
   FileText,
@@ -59,6 +60,10 @@ function AppContent() {
         <Hero onToggleForm={() => setIsFormOpen((current) => !current)} />
         <Dashboard metrics={metrics} totalVisible={filteredTasks.length} />
 
+        <section className={`grid gap-6 ${isFormOpen ? 'xl:grid-cols-[410px_minmax(0,1fr)]' : 'grid-cols-1'}`}>
+          <TaskForm form={form} isOpen={isFormOpen} setForm={setForm} onSubmit={handleSubmit} />
+
+          <div className="min-w-0 space-y-5">
         <section className="grid gap-6 xl:grid-cols-[410px_1fr]">
           <TaskForm form={form} isOpen={isFormOpen} setForm={setForm} onSubmit={handleSubmit} />
 
@@ -209,6 +214,21 @@ function Filters() {
         <h2 className="font-semibold">Filtros avançados</h2>
       </div>
       <div className="grid gap-3 md:grid-cols-[1fr_180px_160px_150px]">
+        <label className="grid gap-2 text-sm font-semibold text-slate-300">
+          Busca
+          <span className="relative block">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              className="w-full rounded-2xl border border-slate-700/80 bg-slate-950/90 py-3 pl-10 pr-4 text-sm font-medium text-slate-100 shadow-inner shadow-black/20 outline-none transition placeholder:text-slate-600 hover:border-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
+              placeholder="Buscar por obrigação, cliente, regime..."
+              value={filters.search}
+              onChange={(event) => setFilters({ ...filters, search: event.target.value })}
+            />
+          </span>
+        </label>
+        <Select label="Categoria" value={filters.category} onChange={(category) => setFilters({ ...filters, category: category as typeof filters.category })} options={['Todas', ...TASK_CATEGORIES]} />
+        <Select label="Status" value={filters.status} onChange={(status) => setFilters({ ...filters, status: status as typeof filters.status })} options={['Todos', ...TASK_STATUSES]} />
+        <Select label="Prioridade" value={filters.priority} onChange={(priority) => setFilters({ ...filters, priority: priority as typeof filters.priority })} options={['Todas', ...TASK_PRIORITIES]} />
         <label className="relative block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
@@ -264,6 +284,16 @@ function TaskCard({
             <span className="text-slate-400">Prioridade</span>
             <strong className={priorityTone}>{task.priority}</strong>
           </div>
+          <div className="grid gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</span>
+            <Select
+              value={task.status}
+              onChange={(status) => onUpdate(task.id, { status: status as TaskStatus })}
+              options={TASK_STATUSES}
+              size="compact"
+              className={statusTone}
+            />
+          </div>
           <select
             className={`rounded-xl border px-3 py-2 text-sm outline-none ${statusTone}`}
             value={task.status}
@@ -312,6 +342,41 @@ function Input({
   );
 }
 
+function Select({
+  label,
+  value,
+  onChange,
+  options,
+  size = 'default',
+  className = '',
+}: {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  size?: 'default' | 'compact';
+  className?: string;
+}) {
+  const sizing = size === 'compact' ? 'rounded-xl py-2 pl-3 pr-10' : 'rounded-2xl py-3 pl-4 pr-11';
+  const select = (
+    <div className="relative">
+      <select
+        className={`w-full appearance-none border border-slate-700/80 bg-slate-950/90 text-sm font-medium text-slate-100 shadow-inner shadow-black/20 outline-none transition hover:border-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10 ${sizing} ${className}`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option className="bg-slate-950 text-slate-100" key={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-200/80" />
+    </div>
+  );
+
+  if (!label) return select;
+  return <label className="grid gap-2 text-sm font-semibold text-slate-300">{label}{select}</label>;
 function Select({ label, value, onChange, options }: { label?: string; value: string; onChange: (value: string) => void; options: readonly string[] }) {
   const select = (
     <select

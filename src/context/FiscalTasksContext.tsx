@@ -78,6 +78,7 @@ export function FiscalTasksProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fiscalTasksApi.list().then((storedTasks) => {
+      setTasks(storedTasks);
       if (storedTasks.length) {
         setTasks(storedTasks);
       } else {

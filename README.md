@@ -10,6 +10,7 @@ Aplicação single-page para organizar obrigações diárias e rotinas fiscais d
 - Alertas visuais para obrigações atrasadas e obrigações que vencem no dia.
 - Filtros por busca textual, categoria, status e prioridade.
 - Mini dashboard com vencimentos do dia, concluídas, atrasadas, em andamento e total filtrado.
+- Persistência local em `localStorage`, sem dados mock/pré-carregados, com uma camada `fiscalTasksApi` assíncrona simulando contratos prontos para migração futura para Fetch/Axios.
 - Persistência local em `localStorage`, com uma camada `fiscalTasksApi` assíncrona simulando contratos prontos para migração futura para Fetch/Axios.
 
 ## Arquitetura
