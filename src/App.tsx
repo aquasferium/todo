@@ -8,10 +8,13 @@ import {
   Clock3,
   FileText,
   Filter,
+  Pencil,
   Plus,
+  Save,
   Search,
   ShieldCheck,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { FiscalTasksProvider, useFiscalTasks } from './context/FiscalTasksContext';
@@ -28,6 +31,20 @@ import {
   type TaskStatus,
 } from './types';
 import { formatDate, getTodayIso, isOverdue, isToday } from './utils/date';
+
+function taskToForm(task: FiscalTask): CreateFiscalTaskInput {
+  return {
+    title: task.title,
+    category: task.category,
+    taxRegime: task.taxRegime,
+    clientName: task.clientName,
+    description: task.description,
+    dueDate: task.dueDate,
+    priority: task.priority,
+    recurrence: task.recurrence,
+    status: task.status,
+  };
+}
 
 const emptyForm: CreateFiscalTaskInput = {
   title: '',
@@ -239,50 +256,121 @@ function TaskCard({
   onUpdate: (id: string, input: Partial<CreateFiscalTaskInput>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<CreateFiscalTaskInput>(() => taskToForm(task));
   const overdue = task.status !== 'Concluído' && isOverdue(task.dueDate);
   const dueToday = task.status !== 'Concluído' && isToday(task.dueDate);
   const statusTone = task.status === 'Concluído' ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : task.status === 'Em Andamento' ? 'border-amber-400/30 bg-amber-400/10 text-amber-200' : 'border-slate-600 bg-slate-800 text-slate-200';
+  const cardTone = task.status === 'Concluído'
+    ? 'border-emerald-400/40 bg-emerald-950/25 shadow-emerald-950/20'
+    : overdue
+      ? 'border-rose-500/50 bg-rose-950/30 shadow-rose-950/20'
+      : dueToday
+        ? 'border-cyan-400/40 bg-cyan-950/20 shadow-cyan-950/20'
+        : task.status === 'Em Andamento'
+          ? 'border-amber-400/35 bg-amber-950/20 shadow-amber-950/20'
+          : 'border-slate-800 bg-slate-900/75 shadow-slate-950/20';
   const priorityTone = task.priority === 'Alta' ? 'text-rose-200' : task.priority === 'Média' ? 'text-amber-200' : 'text-emerald-200';
 
+  function startEditing() {
+    setEditForm(taskToForm(task));
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setEditForm(taskToForm(task));
+    setIsEditing(false);
+  }
+
+  async function handleEditSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await onUpdate(task.id, editForm);
+    setIsEditing(false);
+  }
+
   return (
-    <article className={`rounded-[1.75rem] border p-5 shadow-lg shadow-slate-950/20 ${overdue ? 'border-rose-500/50 bg-rose-950/30' : dueToday ? 'border-cyan-400/40 bg-cyan-950/20' : 'border-slate-800 bg-slate-900/75'}`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <Badge>{task.category}</Badge>
-            <Badge>{task.taxRegime}</Badge>
-            <Badge>{task.recurrence}</Badge>
-            {overdue && <Badge className="border-rose-400/40 bg-rose-400/10 text-rose-200">Atrasada</Badge>}
-            {dueToday && <Badge className="border-cyan-400/40 bg-cyan-400/10 text-cyan-200">Vence hoje</Badge>}
+    <article className={`rounded-[1.75rem] border p-5 shadow-lg transition-colors duration-300 ${cardTone}`}>
+      {isEditing ? (
+        <form className="grid gap-5" onSubmit={handleEditSubmit}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <Badge className="border-cyan-400/40 bg-cyan-400/10 text-cyan-200">Editando obrigação</Badge>
+              <h3 className="mt-3 text-xl font-semibold text-slate-50">Atualizar atividade fiscal</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300" type="submit">
+                <Save className="h-4 w-4" /> Salvar
+              </button>
+              <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800" onClick={cancelEditing} type="button">
+                <X className="h-4 w-4" /> Cancelar
+              </button>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-slate-50">{task.title}</h3>
-          <p className="mt-1 text-sm text-slate-400">Cliente: {task.clientName}</p>
-          <p className="mt-3 leading-7 text-slate-300">{task.description}</p>
-        </div>
-        <div className="flex shrink-0 flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 text-sm lg:w-56">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-400">Vencimento</span>
-            <strong>{formatDate(task.dueDate)}</strong>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Input label="Título da obrigação" value={editForm.title} onChange={(title) => setEditForm({ ...editForm, title })} required />
+            <Input label="Cliente" value={editForm.clientName} onChange={(clientName) => setEditForm({ ...editForm, clientName })} required />
+            <Select label="Categoria" value={editForm.category} onChange={(category) => setEditForm({ ...editForm, category: category as TaskCategory })} options={TASK_CATEGORIES} />
+            <Select label="Regime tributário" value={editForm.taxRegime} onChange={(taxRegime) => setEditForm({ ...editForm, taxRegime: taxRegime as CreateFiscalTaskInput['taxRegime'] })} options={TAX_REGIMES} />
+            <Select label="Prioridade" value={editForm.priority} onChange={(priority) => setEditForm({ ...editForm, priority: priority as TaskPriority })} options={TASK_PRIORITIES} />
+            <Select label="Recorrência" value={editForm.recurrence} onChange={(recurrence) => setEditForm({ ...editForm, recurrence: recurrence as CreateFiscalTaskInput['recurrence'] })} options={RECURRENCE_OPTIONS} />
+            <Select label="Status" value={editForm.status} onChange={(status) => setEditForm({ ...editForm, status: status as TaskStatus })} options={TASK_STATUSES} />
+            <Input label="Vencimento" type="date" value={editForm.dueDate} onChange={(dueDate) => setEditForm({ ...editForm, dueDate })} required />
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-400">Prioridade</span>
-            <strong className={priorityTone}>{task.priority}</strong>
-          </div>
-          <div className="grid gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</span>
-            <Select
-              value={task.status}
-              onChange={(status) => onUpdate(task.id, { status: status as TaskStatus })}
-              options={TASK_STATUSES}
-              size="compact"
-              className={statusTone}
+
+          <label className="grid gap-2 text-sm font-medium text-slate-300">
+            Descrição / passo a passo
+            <textarea
+              className="min-h-28 rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-300"
+              value={editForm.description}
+              onChange={(event) => setEditForm({ ...editForm, description: event.target.value })}
+              required
             />
+          </label>
+        </form>
+      ) : (
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="mb-3 flex flex-wrap gap-2">
+              <Badge>{task.category}</Badge>
+              <Badge>{task.taxRegime}</Badge>
+              <Badge>{task.recurrence}</Badge>
+              <Badge className={statusTone}>{task.status}</Badge>
+              {overdue && <Badge className="border-rose-400/40 bg-rose-400/10 text-rose-200">Atrasada</Badge>}
+              {dueToday && <Badge className="border-cyan-400/40 bg-cyan-400/10 text-cyan-200">Vence hoje</Badge>}
+            </div>
+            <h3 className="text-xl font-semibold text-slate-50">{task.title}</h3>
+            <p className="mt-1 text-sm text-slate-400">Cliente: {task.clientName}</p>
+            <p className="mt-3 leading-7 text-slate-300">{task.description}</p>
           </div>
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/30 px-3 py-2 text-rose-200 transition hover:bg-rose-400/10" onClick={() => onDelete(task.id)}>
-            <Trash2 className="h-4 w-4" /> Excluir
-          </button>
+          <div className="flex shrink-0 flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950/50 p-4 text-sm lg:w-56">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-400">Vencimento</span>
+              <strong>{formatDate(task.dueDate)}</strong>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-400">Prioridade</span>
+              <strong className={priorityTone}>{task.priority}</strong>
+            </div>
+            <div className="grid gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Status</span>
+              <Select
+                value={task.status}
+                onChange={(status) => onUpdate(task.id, { status: status as TaskStatus })}
+                options={TASK_STATUSES}
+                size="compact"
+                className={statusTone}
+              />
+            </div>
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/30 px-3 py-2 text-cyan-200 transition hover:bg-cyan-400/10" onClick={startEditing} type="button">
+              <Pencil className="h-4 w-4" /> Editar
+            </button>
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/30 px-3 py-2 text-rose-200 transition hover:bg-rose-400/10" onClick={() => onDelete(task.id)} type="button">
+              <Trash2 className="h-4 w-4" /> Excluir
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </article>
   );
 }
