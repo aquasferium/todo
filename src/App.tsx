@@ -64,10 +64,6 @@ function AppContent() {
           <TaskForm form={form} isOpen={isFormOpen} setForm={setForm} onSubmit={handleSubmit} />
 
           <div className="min-w-0 space-y-5">
-        <section className="grid gap-6 xl:grid-cols-[410px_1fr]">
-          <TaskForm form={form} isOpen={isFormOpen} setForm={setForm} onSubmit={handleSubmit} />
-
-          <div className="space-y-5">
             <Filters />
             {isLoading ? (
               <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 text-center text-slate-400">
@@ -229,18 +225,6 @@ function Filters() {
         <Select label="Categoria" value={filters.category} onChange={(category) => setFilters({ ...filters, category: category as typeof filters.category })} options={['Todas', ...TASK_CATEGORIES]} />
         <Select label="Status" value={filters.status} onChange={(status) => setFilters({ ...filters, status: status as typeof filters.status })} options={['Todos', ...TASK_STATUSES]} />
         <Select label="Prioridade" value={filters.priority} onChange={(priority) => setFilters({ ...filters, priority: priority as typeof filters.priority })} options={['Todas', ...TASK_PRIORITIES]} />
-        <label className="relative block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-          <input
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 py-3 pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-600 focus:border-cyan-300"
-            placeholder="Buscar por obrigação, cliente, regime..."
-            value={filters.search}
-            onChange={(event) => setFilters({ ...filters, search: event.target.value })}
-          />
-        </label>
-        <Select value={filters.category} onChange={(category) => setFilters({ ...filters, category: category as typeof filters.category })} options={['Todas', ...TASK_CATEGORIES]} />
-        <Select value={filters.status} onChange={(status) => setFilters({ ...filters, status: status as typeof filters.status })} options={['Todos', ...TASK_STATUSES]} />
-        <Select value={filters.priority} onChange={(priority) => setFilters({ ...filters, priority: priority as typeof filters.priority })} options={['Todas', ...TASK_PRIORITIES]} />
       </div>
     </section>
   );
@@ -294,15 +278,6 @@ function TaskCard({
               className={statusTone}
             />
           </div>
-          <select
-            className={`rounded-xl border px-3 py-2 text-sm outline-none ${statusTone}`}
-            value={task.status}
-            onChange={(event) => onUpdate(task.id, { status: event.target.value as TaskStatus })}
-          >
-            {TASK_STATUSES.map((status) => (
-              <option key={status}>{status}</option>
-            ))}
-          </select>
           <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/30 px-3 py-2 text-rose-200 transition hover:bg-rose-400/10" onClick={() => onDelete(task.id)}>
             <Trash2 className="h-4 w-4" /> Excluir
           </button>
@@ -342,26 +317,43 @@ function Input({
   );
 }
 
-function Select({
-  label,
-  value,
-  onChange,
-  options,
-  size = 'default',
-  className = '',
-}: {
+interface SelectProps {
   label?: string;
   value: string;
   onChange: (value: string) => void;
   options: readonly string[];
   size?: 'default' | 'compact';
   className?: string;
-}) {
-  const sizing = size === 'compact' ? 'rounded-xl py-2 pl-3 pr-10' : 'rounded-2xl py-3 pl-4 pr-11';
-  const select = (
+}
+
+function Select({ label, ...controlProps }: SelectProps) {
+  if (!label) {
+    return <SelectControl {...controlProps} />;
+  }
+
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-slate-300">
+      <span>{label}</span>
+      <SelectControl {...controlProps} />
+    </label>
+  );
+}
+
+function SelectControl({
+  value,
+  onChange,
+  options,
+  size = 'default',
+  className = '',
+}: Omit<SelectProps, 'label'>) {
+  const sizeClasses = size === 'compact' ? 'rounded-xl py-2 pl-3 pr-10' : 'rounded-2xl py-3 pl-4 pr-11';
+  const stateClasses = 'hover:border-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10';
+  const baseClasses = 'w-full appearance-none border border-slate-700/80 bg-slate-950/90 text-sm font-medium text-slate-100 shadow-inner shadow-black/20 outline-none transition';
+
+  return (
     <div className="relative">
       <select
-        className={`w-full appearance-none border border-slate-700/80 bg-slate-950/90 text-sm font-medium text-slate-100 shadow-inner shadow-black/20 outline-none transition hover:border-slate-500 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10 ${sizing} ${className}`}
+        className={[baseClasses, stateClasses, sizeClasses, className].filter(Boolean).join(' ')}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -374,28 +366,17 @@ function Select({
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-200/80" />
     </div>
   );
-
-  if (!label) return select;
-  return <label className="grid gap-2 text-sm font-semibold text-slate-300">{label}{select}</label>;
-function Select({ label, value, onChange, options }: { label?: string; value: string; onChange: (value: string) => void; options: readonly string[] }) {
-  const select = (
-    <select
-      className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-300"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      {options.map((option) => (
-        <option key={option}>{option}</option>
-      ))}
-    </select>
-  );
-
-  if (!label) return select;
-  return <label className="grid gap-2 text-sm font-medium text-slate-300">{label}{select}</label>;
 }
 
-function Badge({ children, className = 'border-slate-700 bg-slate-800 text-slate-300' }: { children: string; className?: string }) {
-  return <span className={`rounded-full border px-3 py-1 text-xs font-medium ${className}`}>{children}</span>;
+interface BadgeProps {
+  children: string;
+  className?: string;
+}
+
+function Badge({ children, className = 'border-slate-700 bg-slate-800 text-slate-300' }: BadgeProps) {
+  const badgeClasses = ['rounded-full border px-3 py-1 text-xs font-medium', className].join(' ');
+
+  return <span className={badgeClasses}>{children}</span>;
 }
 
 export default function App() {
