@@ -20,6 +20,7 @@ function readStorage(): FiscalTask[] {
     }
 
     return userTasks;
+    return JSON.parse(raw) as FiscalTask[];
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);
     return [];
